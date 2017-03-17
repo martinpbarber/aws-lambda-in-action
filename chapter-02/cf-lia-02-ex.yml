@@ -1,0 +1,111 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  AWS Lambda in Action: Chapter 2 Exercise
+
+Resources:
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+
+  NodeLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: customGreetingsOnDemand-Node
+      Description: Returns greetings when you ask for them
+      Runtime: nodejs4.3
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 3
+      Code:
+        ZipFile: !Sub |
+          console.log('Loading function');
+          
+          exports.handler = (event, context, callback) => {
+              console.log('Received event:', JSON.stringify(event, null, 2));
+          
+              if ( 'greet' in event && validGreet(event.greet) ) {
+                  greet = event.greet;
+              } else {
+                  greet = 'Hello';
+              }
+          
+              if ( 'name' in event && validName(event.name) ) {
+                  name = event.name;
+              } else {
+                  name = 'World';
+              }
+
+              var greetings = greet + ' ' + name + '!';
+              console.log(greetings);
+
+              callback(null, greetings);
+          };
+          
+          
+          function validGreet(greet) {
+              return greet.trim() != ""
+          }
+          
+          function validName(name) {
+              return name.trim() != ""
+          }
+
+  PythonLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: customGreetingsOnDemand-Python
+      Description: Returns greetings when you ask for them
+      Runtime: python2.7
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 3
+      Code:
+        ZipFile: !Sub |
+          import json
+          
+          def lambda_handler(event, context):
+              print("Received event: " + json.dumps(event))
+          
+              if "greet" in event and valid_greet(event["greet"]):
+                  greet = event["greet"]
+              else:
+                  greet = "Hello"
+          
+              if "name" in event and valid_name(event["name"]):
+                  name = event["name"]
+              else:
+                  name = "World"
+          
+              greetings = greet + " " + name + "!"
+              return greetings
+          
+          
+          def valid_greet(greet):
+              return greet.strip() != ""
+          
+          def valid_name(name):
+              return name.strip() != ""
